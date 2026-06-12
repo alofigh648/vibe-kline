@@ -38,6 +38,50 @@ copy_hooks() {
     success "Hooks → $dest"
 }
 
+# Write or merge hook entries into a settings.json file.
+# $1 = settings.json path, $2 = pre_tool_use.py absolute path, $3 = post_tool_use.py absolute path
+register_hooks() {
+    local settings_file="$1"
+    local pre_cmd="python3 $2"
+    local post_cmd="python3 $3"
+
+    if [[ -f "$settings_file" ]]; then
+        # Merge: add hooks block only if not already present
+        if grep -q '"PreToolUse"' "$settings_file" || grep -q '"PostToolUse"' "$settings_file"; then
+            warn "$settings_file already has hook entries — skipping (verify manually)"
+            return
+        fi
+        # Inject hooks into existing JSON using Python
+        python3 - "$settings_file" "$pre_cmd" "$post_cmd" <<'PYEOF'
+import json, sys
+path, pre, post = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(path) as f:
+    cfg = json.load(f)
+cfg.setdefault("hooks", {})
+cfg["hooks"]["PreToolUse"]  = [{"matcher": "", "hooks": [{"type": "command", "command": pre}]}]
+cfg["hooks"]["PostToolUse"] = [{"matcher": "", "hooks": [{"type": "command", "command": post}]}]
+with open(path, "w") as f:
+    json.dump(cfg, f, indent=2)
+    f.write("\n")
+PYEOF
+    else
+        python3 - "$settings_file" "$pre_cmd" "$post_cmd" <<'PYEOF'
+import json, sys
+path, pre, post = sys.argv[1], sys.argv[2], sys.argv[3]
+cfg = {
+    "hooks": {
+        "PreToolUse":  [{"matcher": "", "hooks": [{"type": "command", "command": pre}]}],
+        "PostToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": post}]}]
+    }
+}
+with open(path, "w") as f:
+    json.dump(cfg, f, indent=2)
+    f.write("\n")
+PYEOF
+    fi
+    success "Hooks registered → $settings_file"
+}
+
 print_serve_hint() {
     local dir="$1"
     echo ""
@@ -122,6 +166,9 @@ if [[ "$MODE" == "global" ]]; then
     [[ "$confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 
     copy_hooks "$GLOBAL_HOOKS"
+    register_hooks "$HOME/.claude/settings.json" \
+        "$GLOBAL_HOOKS/pre_tool_use.py" \
+        "$GLOBAL_HOOKS/post_tool_use.py"
 
     mkdir -p "$KLINE_HOME"
     cp "$SCRIPT_DIR/kline.html" "$KLINE_HOME/kline.html"
@@ -166,6 +213,10 @@ if [[ "$MODE" == "project" ]]; then
     header "Project install → $(realpath "$TARGET_DIR")"
 
     copy_hooks "$TARGET_DIR/.claude/hooks"
+    ABS_TARGET="$(realpath "$TARGET_DIR")"
+    register_hooks "$ABS_TARGET/.claude/settings.json" \
+        "$ABS_TARGET/.claude/hooks/pre_tool_use.py" \
+        "$ABS_TARGET/.claude/hooks/post_tool_use.py"
 
     src="$(kline_html_source)"
     if [[ -n "$src" ]]; then
