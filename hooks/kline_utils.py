@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 # ── Project directory detection ───────────────────────────────────────────
 # Global install  → hooks live in ~/.claude/hooks/  → discover project at runtime
-# Project install → hooks live in <proj>/.claude/hooks/ → go 3 levels up
+# Project install → hooks live in <proj>/.claude/hooks/ → go 2 levels up (hooks → .claude → proj)
 
 _HOOKS_DIR = Path(__file__).parent
 _GLOBAL_HOOKS_DIR = Path.home() / '.claude' / 'hooks'
@@ -35,7 +35,7 @@ def _find_project_dir() -> Path:
 if _IS_GLOBAL:
     PROJECT_DIR = _find_project_dir()
 else:
-    PROJECT_DIR = _HOOKS_DIR.parent.parent.parent
+    PROJECT_DIR = _HOOKS_DIR.parent.parent
 
 DATA_FILE   = PROJECT_DIR / '.claude' / 'kline_data.json'
 PUBLIC_JSON = PROJECT_DIR / 'kline_data.json'
