@@ -5,6 +5,9 @@
 
 [English](README.md)
 
+<img width="2879" height="1619" alt="image" src="https://github.com/user-attachments/assets/2a372e07-d79e-468e-b954-5cdd87505366" />
+
+
 ---
 
 ## 它做了什么
