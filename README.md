@@ -5,6 +5,9 @@
 
 [中文文档](README.zh.md)
 
+<img width="2879" height="1619" alt="image" src="https://github.com/user-attachments/assets/0d2af86c-4b75-48d6-95fb-b2b76d0a1559" />
+
+
 ---
 
 ## What it does
